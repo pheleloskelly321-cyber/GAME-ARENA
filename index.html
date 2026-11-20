@@ -4,96 +4,235 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Game Arena - Tic Tac Toe 3D</title>
+    <!-- Tailwind CSS pou stil rapid -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome pou ikòn yo -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+        
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #0a0a15;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            touch-action: none; /* Pou anpeche telefòn lan zoom lè w ap jwe */
+            background-color: #050510; /* Koulè fonse background lan */
+            font-family: 'Rajdhani', sans-serif;
+            touch-action: none; /* Anpeche telefòn lan zoom lè w ap jwe */
+            user-select: none;
         }
-        canvas { display: block; }
+
+        .font-title { font-family: 'Orbitron', sans-serif; }
         
-        /* Bwat pou enfòmasyon yo (HUD) */
-        #hud {
+        /* Glassmorphism pou bwat yo */
+        .glass-panel {
+            background: rgba(10, 15, 30, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.1);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        .neon-border {
+            border: 1px solid #00aaff;
+            box-shadow: 0 0 10px rgba(0, 170, 255, 0.5), inset 0 0 10px rgba(0, 170, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(180deg, #007bff 0%, #0056b3 100%);
+            border: 1px solid #00d4ff;
+            box-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+            transition: all 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.95); }
+
+        .btn-secondary {
+            background: rgba(20, 25, 40, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s;
+        }
+        .btn-secondary:active { transform: scale(0.95); background: rgba(40, 50, 70, 0.9); }
+
+        /* Kache panèl yo sou telefòn pou board la ka parèt byen */
+        @media (max-width: 1024px) {
+            .desktop-only { display: none !important; }
+        }
+        
+        #canvas-container {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            pointer-events: none;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
         }
-        #status {
-            background: rgba(0, 0, 0, 0.7);
-            color: #00fff0;
-            padding: 10px 20px;
-            border-radius: 12px;
-            border: 1px solid #00fff0;
-            font-weight: bold;
-            font-size: 16px;
-            box-shadow: 0 0 10px rgba(0, 255, 240, 0.3);
+        
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Klike sou board la mache */
         }
-        #reset-btn {
-            pointer-events: auto;
-            background: #00fff0;
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 255, 240, 0.4);
-        }
-        #reset-btn:active {
-            transform: scale(0.95);
-        }
+        
+        /* Tout bouton dwe ka klike */
+        button, .clickable { pointer-events: auto; }
     </style>
 </head>
 <body>
 
-    <div id="hud">
-        <div id="status">Tou: X</div>
-        <button id="reset-btn">Rekòmanse</button>
+    <!-- KOTE JWÈT 3D LA YE -->
+    <div id="canvas-container"></div>
+
+    <!-- UI A (Tout sa w wè anlè a) -->
+    <div id="ui-layer" class="flex flex-col justify-between p-4 md:p-6 text-white">
+        
+        <!-- TOP BAR -->
+        <div class="flex justify-between items-start w-full">
+            <!-- Back Button -->
+            <button class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold">
+                <i class="fas fa-chevron-left"></i> Back
+            </button>
+
+            <!-- Logo -->
+            <div class="flex flex-col items-center">
+                <div class="text-3xl md:text-4xl font-title font-black italic tracking-wider text-blue-400 neon-text flex items-center gap-2">
+                    <i class="fas fa-gamepad"></i> GAME ARENA
+                </div>
+            </div>
+
+            <!-- Sound Toggle -->
+            <button class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold">
+                <i class="fas fa-volume-up text-blue-400"></i> Sound: ON <div class="w-8 h-4 bg-blue-500 rounded-full relative"><div class="absolute right-1 top-0.5 w-3 h-3 bg-white rounded-full"></div></div>
+            </button>
+        </div>
+
+        <!-- PLAYER PROFILES -->
+        <div class="flex justify-between items-center w-full mt-4">
+            <!-- Player 1 (X) -->
+            <div class="flex items-center gap-3 glass-panel p-2 pr-6 rounded-xl md:rounded-full border border-blue-500/50 relative">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Starzzzyy&backgroundColor=0055ff" alt="P1" class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-blue-900 border-2 border-blue-400">
+                <div>
+                    <div class="font-bold text-lg md:text-xl">Starzzzyy</div>
+                    <div class="text-3xl md:text-4xl text-blue-400 font-black"><i class="fas fa-times"></i></div>
+                </div>
+            </div>
+
+            <!-- Center Title & Turn -->
+            <div class="hidden md:flex flex-col items-center flex-1 mx-8">
+                <div class="text-5xl font-title font-black italic tracking-widest uppercase neon-text">Tic Tac Toe</div>
+                <div class="mt-4 glass-panel px-6 py-2 rounded-full flex items-center gap-3 border border-blue-400 text-xl font-bold shadow-[0_0_15px_rgba(0,170,255,0.4)]">
+                    <i class="fas fa-hourglass-half text-blue-400"></i> <span id="turn-text">Your Turn</span>
+                </div>
+            </div>
+
+            <!-- Player 2 (O) -->
+            <div class="flex items-center gap-3 glass-panel p-2 pl-6 rounded-xl md:rounded-full border border-gray-500/50 relative flex-row-reverse text-right">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mia_FT&backgroundColor=333333" alt="P2" class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-700 border-2 border-gray-400">
+                <div>
+                    <div class="font-bold text-lg md:text-xl">Mia_FT</div>
+                    <div class="text-3xl md:text-4xl text-gray-300 font-black"><i class="fas fa-circle-notch"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MIDDLE SECTION (SIDEBARS) -->
+        <div class="flex justify-between items-center w-full flex-1 mt-4">
+            
+            <!-- Left Sidebar (Game Modes) - Kache sou telefòn -->
+            <div class="desktop-only w-64 glass-panel rounded-2xl p-4 border border-blue-500/30 flex flex-col gap-2">
+                <div class="text-gray-400 font-bold mb-2 uppercase text-sm tracking-wider flex items-center gap-2">
+                    <i class="fas fa-gamepad"></i> Game Modes
+                </div>
+                <button class="btn-primary w-full py-3 rounded-xl flex justify-between items-center px-4 font-bold text-sm">
+                    <div class="flex items-center gap-3"><i class="fas fa-robot"></i> Play vs AI</div>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button class="btn-secondary w-full py-3 rounded-xl flex justify-between items-center px-4 font-bold text-sm">
+                    <div class="flex items-center gap-3"><i class="fas fa-users"></i> Online 1v1</div>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button class="btn-secondary w-full py-3 rounded-xl flex justify-between items-center px-4 font-bold text-sm">
+                    <div class="flex items-center gap-3"><i class="fas fa-lock"></i> Private Room</div>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <div class="mt-4 text-center text-gray-500 text-xs">
+                    <div class="font-title font-black text-white">GAME ARENA</div>
+                    <div class="tracking-widest mt-1">PLAY • COMPETE • WIN</div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar (Trophy) - Kache sou telefòn -->
+            <div class="desktop-only w-48 flex flex-col items-center justify-center">
+                <!-- Yon trophy ki fèt ak CSS -->
+                <div class="text-7xl text-yellow-500 drop-shadow-[0_0_20px_rgba(255,215,0,0.8)] mb-4">
+                    <i class="fas fa-trophy"></i>
+                </div>
+            </div>
+
+            <!-- Espas pou board 3D la (li ladan l nan background lan) -->
+            <div class="flex-1"></div>
+        </div>
+
+        <!-- BOTTOM BAR -->
+        <div class="flex flex-col items-center gap-4 mt-auto mb-2 md:mb-4">
+            <!-- Status text -->
+            <div class="glass-panel px-6 py-1 rounded-full text-xs md:text-sm text-gray-300 font-bold border border-gray-600/50">
+                Game in progress...
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex justify-center gap-2 md:gap-4 w-full max-w-2xl px-2">
+                <button id="restart-btn" class="btn-secondary flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-sm md:text-base font-bold">
+                    <i class="fas fa-sync-alt"></i> <span class="hidden md:inline">Restart</span>
+                </button>
+                <button class="btn-primary flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-sm md:text-base font-bold shadow-[0_0_20px_rgba(0,100,255,0.6)]">
+                    <i class="fas fa-handshake"></i> Rematch
+                </button>
+                <button class="btn-secondary flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-sm md:text-base font-bold">
+                    <i class="fas fa-sign-out-alt"></i> <span class="hidden md:inline">Exit Game</span>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Chaje Three.js soti sou entènèt -->
+    <!-- THREE.JS SCRIPT -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
         // 1. PREPARE SÈN 3D LA
         const scene = new THREE.Scene();
         
-        // Kamera a
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 7, 7);
+        // Kamera a (Nou mete l pi wo pou n ka wè board la byen)
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 10, 8);
         camera.lookAt(0, 0, 0);
 
-        // Rendu a (sa ki desinen bagay yo sou ekran an)
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // 2. LIMYÈ
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // 2. EKLAJ (Limyè)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(5, 10, 5);
+        // Limyè prensipal (soti anlè)
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(5, 15, 5);
         dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
         scene.add(dirLight);
 
-        // Limyè neon pou bay atmosfè gaming lan
-        const pointLight1 = new THREE.PointLight(0x00fff0, 1, 20);
-        pointLight1.position.set(-5, 5, -5);
-        scene.add(pointLight1);
-
-        const pointLight2 = new THREE.PointLight(0xffd700, 1, 20);
-        pointLight2.position.set(5, 5, 5);
-        scene.add(pointLight2);
+        // Limyè neon ble (pou ambiance lan)
+        const blueLight = new THREE.PointLight(0x0077ff, 2, 30);
+        blueLight.position.set(-5, 2, -5);
+        scene.add(blueLight);
+        
+        const blueLight2 = new THREE.PointLight(0x00d4ff, 2, 30);
+        blueLight2.position.set(5, 2, 5);
+        scene.add(blueLight2);
 
         // 3. KREYE TABLO A (BOARD LA)
         const board = [];
@@ -103,16 +242,32 @@
         const squareSize = 2;
         const gap = 0.1;
 
+        // Base anba board la (Metal fonse)
+        const baseGeo = new THREE.BoxGeometry(squareSize * 3 + 0.5, 0.8, squareSize * 3 + 0.5);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.3 });
+        const baseBoard = new THREE.Mesh(baseGeo, baseMat);
+        baseBoard.position.y = -0.5;
+        baseBoard.receiveShadow = true;
+        boardGroup.add(baseBoard);
+        
+        // Liy neon ble anba board la
+        const neonEdgeGeo = new THREE.BoxGeometry(squareSize * 3 + 0.6, 0.1, squareSize * 3 + 0.6);
+        const neonEdgeMat = new THREE.MeshBasicMaterial({ color: 0x0077ff });
+        const neonEdge = new THREE.Mesh(neonEdgeGeo, neonEdgeMat);
+        neonEdge.position.y = -0.1;
+        boardGroup.add(neonEdge);
+
+        // Kreye 9 kare yo
         for (let i = 0; i < 9; i++) {
             const x = (i % 3 - 1) * (squareSize + gap);
             const z = (Math.floor(i / 3) - 1) * (squareSize + gap);
 
-            // Materyèl kare a
             const geometry = new THREE.BoxGeometry(squareSize, 0.2, squareSize);
+            // Materyèl kare a (Metal nwa)
             const material = new THREE.MeshStandardMaterial({ 
-                color: 0x16162a,
-                roughness: 0.2,
-                metalness: 0.8
+                color: 0x1a1a24,
+                metalness: 0.8,
+                roughness: 0.4
             });
             const square = new THREE.Mesh(geometry, material);
             square.position.set(x, 0, z);
@@ -132,12 +287,13 @@
             [0,4,8], [2,4,6]           // Dyagonal
         ];
 
-        const statusText = document.getElementById('status');
-        const resetBtn = document.getElementById('reset-btn');
+        const turnText = document.getElementById('turn-text');
+        const restartBtn = document.getElementById('restart-btn');
 
+        // Pyès X (Ble klere)
         function createX(x, z) {
             const group = new THREE.Group();
-            const mat = new THREE.MeshStandardMaterial({ color: 0x00fff0, emissive: 0x00fff0, emissiveIntensity: 0.5 });
+            const mat = new THREE.MeshStandardMaterial({ color: 0x0077ff, emissive: 0x0033aa, metalness: 0.5, roughness: 0.2 });
             
             const geo1 = new THREE.BoxGeometry(0.3, 0.3, 1.4);
             const piece1 = new THREE.Mesh(geo1, mat);
@@ -154,8 +310,9 @@
             return group;
         }
 
+        // Pyès O (Metal an ajan)
         function createO(x, z) {
-            const mat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.5 });
+            const mat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
             const geo = new THREE.TorusGeometry(0.5, 0.15, 16, 32);
             const piece = new THREE.Mesh(geo, mat);
             piece.rotation.x = Math.PI / 2;
@@ -184,7 +341,7 @@
         function onPointerDown(event) {
             if (gameOver) return;
 
-            // Konvèti pozisyon dwèt la an kowòdone 3D
+            // Konvèti pozisyon dwèt la
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -194,7 +351,6 @@
             if (intersects.length > 0) {
                 const clickedSquare = intersects[0].object;
                 
-                // Si kare a vid
                 if (!clickedSquare.userData.value) {
                     clickedSquare.userData.value = currentPlayer;
                     
@@ -210,16 +366,13 @@
                     if (winner) {
                         gameOver = true;
                         if (winner === 'Draw') {
-                            statusText.innerText = "Match Nul!";
-                            statusText.style.color = "#fff";
+                            turnText.innerText = "Match Nul!";
                         } else {
-                            statusText.innerText = `Gayan: ${winner}!`;
-                            statusText.style.color = winner === 'X' ? "#00fff0" : "#ffd700";
+                            turnText.innerText = `Gayan: ${winner}!`;
                         }
                     } else {
                         currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-                        statusText.innerText = `Tou: ${currentPlayer}`;
-                        statusText.style.color = currentPlayer === 'X' ? "#00fff0" : "#ffd700";
+                        turnText.innerText = currentPlayer === 'X' ? "Your Turn" : "Mia's Turn";
                     }
                 }
             }
@@ -228,38 +381,35 @@
         window.addEventListener('pointerdown', onPointerDown);
 
         // 6. REKÒMANSE
-        resetBtn.addEventListener('click', () => {
+        restartBtn.addEventListener('click', () => {
             // Retire tout pyès yo
-            const piecesToRemove = scene.children.filter(child => child.type === 'Group' || child.type === 'Mesh');
-            piecesToRemove.forEach(child => {
-                if (child !== boardGroup && child.type !== 'DirectionalLight') {
-                     // Nou pa vle retire limyè yo ak board la
-                     if(child.geometry && child.geometry.type === 'TorusGeometry') scene.remove(child);
-                     if(child.type === 'Group' && child.children.length === 2) scene.remove(child);
+            scene.children.forEach(child => {
+                if (child.type === 'Group' && child !== boardGroup) {
+                    scene.remove(child);
+                } else if (child.type === 'Mesh' && child.geometry.type === 'TorusGeometry') {
+                    scene.remove(child);
                 }
             });
             
-            // Reset board state
             board.forEach(sq => sq.userData.value = null);
             currentPlayer = 'X';
             gameOver = false;
-            statusText.innerText = "Tou: X";
-            statusText.style.color = "#00fff0";
+            turnText.innerText = "Your Turn";
         });
 
-        // 7. AJISTE EKRAN SI W VIRE TELEFÒN LAN
+        // 7. AJISTE EKRAN
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // 8. BOUK ANIMASYON (Sa k fè l deplase)
+        // 8. ANIMASYON
         function animate() {
             requestAnimationFrame(animate);
             
-            // Fè board la vire tou dousman (ou ka kòmante li si w pa vle)
-            // boardGroup.rotation.y += 0.002; 
+            // Yon ti rotasyon dous pou board la santi l vivan
+            // boardGroup.rotation.y = Math.sin(Date.now() * 0.0005) * 0.1;
 
             renderer.render(scene, camera);
         }
